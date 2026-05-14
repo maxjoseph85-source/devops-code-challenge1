@@ -2,23 +2,19 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION      = 'us-east-2'
-        FRONTEND_REPO   = '<your-frontend-ecr-url>'
-        BACKEND_REPO    = '<your-backend-ecr-url>'
-        CLUSTER_NAME    = 'devops-challenge-cluster'
-        FRONTEND_SVC    = 'devops-challenge-frontend-service'
-        BACKEND_SVC     = 'devops-challenge-backend-service'
+        AWS_REGION = 'us-east-2'
+        FRONTEND_REPO = '792126555869.dkr.ecr.us-east-2.amazonaws.com/devops-challenge-frontend'
+        BACKEND_REPO  = '792126555869.dkr.ecr.us-east-2.amazonaws.com/devops-challenge-backend'
     }
 
     stages {
-
-        stage('Checkout Code') {
+        stage('Checkout code') {
             steps {
                 checkout scm
             }
         }
 
-        stage('Build Docker Images') {
+        stage('Build Docker images') {
             steps {
                 script {
                     sh 'docker build -t frontend:latest ./frontend'
@@ -29,24 +25,19 @@ pipeline {
 
         stage('Authenticate to ECR') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-credentials'
-                ]]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                     script {
                         sh '''
-                            aws ecr get-login-password --region $AWS_REGION \
-                                | docker login --username AWS --password-stdin $FRONTEND_REPO
-
-                            aws ecr get-login-password --region $AWS_REGION \
-                                | docker login --username AWS --password-stdin $BACKEND_REPO
+                            aws --version
+                            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $FRONTEND_REPO
+                            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $BACKEND_REPO
                         '''
                     }
                 }
             }
         }
 
-        stage('Tag and Push to ECR') {
+        stage('Tag and Push images to ECR') {
             steps {
                 script {
                     sh '''
@@ -60,25 +51,13 @@ pipeline {
             }
         }
 
-        stage('Update ECS Services') {
+        stage('Update ECS services') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-credentials'
-                ]]) {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws-credentials']]) {
                     script {
                         sh '''
-                            aws ecs update-service \
-                                --cluster $CLUSTER_NAME \
-                                --service $FRONTEND_SVC \
-                                --force-new-deployment \
-                                --region $AWS_REGION
-
-                            aws ecs update-service \
-                                --cluster $CLUSTER_NAME \
-                                --service $BACKEND_SVC \
-                                --force-new-deployment \
-                                --region $AWS_REGION
+                            aws ecs update-service --cluster devops-challenge-cluster --service devops-challenge-frontend-service --force-new-deployment --region $AWS_REGION
+                            aws ecs update-service --cluster devops-challenge-cluster --service devops-challenge-backend-service --force-new-deployment --region $AWS_REGION
                         '''
                     }
                 }
