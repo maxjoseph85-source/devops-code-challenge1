@@ -1,2 +1,2 @@
-export const API_URL = 'http://localhost:8080/'
-export default API_URL
+const config = "http://host.docker.internal:8080";
+export default config;
