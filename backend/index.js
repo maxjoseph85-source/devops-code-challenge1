@@ -17,7 +17,7 @@ app.use((req, res, next) => {
     next();
 })
 
-app.get('/api', (req, res) => {
+app.get(['/api', '/api/'], (req, res) => {
     console.log(`${new Date().toISOString()} GET`)
     res.json({id: ID})
 })
